@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRIGHTWrite AI - Ultimate Content Generation Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind Config for Custom Colors & Dark Mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            100: '#e0ebff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js for Markdown Parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.min.js"></script>
+    <!-- html2pdf.js for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-serif-doc { font-family: 'Merriweather', serif; }
+        .font-code { font-family: 'Fira Code', monospace; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(107, 114, 128, 0.6); }
+
+        /* Markdown Editor & Preview Styling */
+        .prose pre { background-color: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-top: 1rem; margin-bottom: 1rem; }
+        .prose code { font-family: 'Fira Code', monospace; font-size: 0.875em; }
+        .prose h1 { font-size: 1.875rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; line-height: 1.25; }
+        .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; line-height: 1.3; }
+        .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; }
+        .prose p { margin-bottom: 1rem; line-height: 1.7; }
+        .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .prose ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .prose blockquote { border-left: 4px solid #3b82f6; padding-left: 1rem; italic: true; margin: 1rem 0; opacity: 0.9; }
+        .prose table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        .prose th, .prose td { border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; text-align: left; }
+        .dark .prose th, .dark .prose td { border-color: #334155; }
+        .prose th { background-color: rgba(241, 245, 249, 0.5); font-weight: 600; }
+        .dark .prose th { background-color: rgba(30, 41, 59, 0.5); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 h-full flex flex-col transition-colors duration-200">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Template Library Modal -->
+    <div id="template-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col border border-slate-200 dark:border-slate-700">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div>
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-shapes text-brand-500"></i> Prompt & Document Library
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Choose a pre-designed template to kickstart your content generation</p>
+                </div>
+                <button onclick="toggleModal('template-modal', false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4" id="template-grid">
+                <!-- Template Cards Injected Here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Header Navigation -->
+    <header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 md:px-6 flex items-center justify-between z-30 sticky top-0">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-600 dark:text-slate-300 hover:text-slate-900 p-2 rounded-lg">
+                <i class="fa-solid fa-bars text-lg"></i>
+            </button>
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-md shadow-brand-500/20">
+                    <i class="fa-solid fa-feather-pointed"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg tracking-tight bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                        BRIGHTWrite <span class="text-xs px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-300 font-semibold uppercase tracking-wider">AI Studio</span>
+                    </h1>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="flex items-center gap-2 md:gap-3">
+            <button onclick="toggleModal('template-modal', true)" class="px-3 py-1.5 text-xs md:text-sm font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition flex items-center gap-2">
+                <i class="fa-solid fa-cubes text-brand-500"></i>
+                <span class="hidden sm:inline">Prompt Library</span>
+            </button>
+            
+            <button id="api-status-btn" class="px-3 py-1.5 text-xs md:text-sm font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl transition flex items-center gap-2">
+                <i class="fa-solid fa-plug text-xs"></i>
+                <span id="api-status-text" class="hidden sm:inline">API Connected</span>
+            </button>
+
+            <button onclick="toggleTheme()" class="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <i class="fa-solid fa-moon dark:hidden"></i>
+                <i class="fa-solid fa-sun hidden dark:inline"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Studio Workspace -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Left Sidebar: Controls & Settings -->
+        <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 -translate-x-full md:translate-x-0 top-16 md:top-0">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <h2 class="font-bold text-sm tracking-wide uppercase text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> Configuration
+                </h2>
+                <button onclick="resetControls()" class="text-xs text-brand-600 dark:text-brand-400 hover:underline">Reset</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-5">
+                <!-- Document Type Filter -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-2">Document Type</label>
+                    <div class="grid grid-cols-2 gap-1.5" id="doc-type-selector">
+                        <!-- Options generated via JS -->
+                    </div>
+                </div>
+
+                <!-- Tone Selection -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-2">Tone of Voice</label>
+                    <select id="tone-select" class="w-full px-3 py-2 text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        <option value="Professional">Professional & Polished</option>
+                        <option value="Creative">Creative & Engaging</option>
+                        <option value="Academic">Academic & Scholarly</option>
+                        <option value="Casual">Casual & Friendly</option>
+                        <option value="Persuasive">Persuasive & Compelling</option>
+                        <option value="Formal">Formal & Official</option>
+                        <option value="Executive">Executive Summary</option>
+                    </select>
+                </div>
+
+                <!-- Output Length Controls -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Target Length</label>
+                        <span id="length-label" class="text-xs font-semibold text-brand-600 dark:text-brand-400">Medium (~500 words)</span>
+                    </div>
+                    <input type="range" id="length-slider" min="1" max="4" step="1" value="2" oninput="updateLengthLabel()" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-600">
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                        <span>Short</span>
+                        <span>Medium</span>
+                        <span>Long</span>
+                        <span>In-Depth</span>
+                    </div>
+                </div>
+
+                <!-- Format Style -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-2">Output Format</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
+                            <input type="radio" name="format-type" value="Markdown" checked class="accent-brand-600">
+                            <span class="text-xs font-medium">Rich Markdown</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
+                            <input type="radio" name="format-type" value="Plain" class="accent-brand-600">
+                            <span class="text-xs font-medium">Plain Text</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Creativity Temperature -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Creativity (Temp)</label>
+                        <span id="temp-val" class="text-xs font-semibold text-slate-600 dark:text-slate-300">0.7</span>
+                    </div>
+                    <input type="range" id="temp-slider" min="0.1" max="1.0" step="0.1" value="0.7" oninput="document.getElementById('temp-val').innerText = this.value" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-600">
+                </div>
+
+                <!-- History / Saved Drafts -->
+                <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-clock-rotate-left"></i> History & Drafts
+                        </label>
+                        <button onclick="clearHistory()" class="text-[10px] text-red-500 hover:underline">Clear</button>
+                    </div>
+                    <div id="history-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <p class="text-xs text-slate-400 italic">No saved drafts yet.</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace (Center & Right) -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-white dark:bg-slate-900">
+            
+            <!-- Input Prompt Section -->
+            <div class="p-4 md:p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                <div class="max-w-4xl mx-auto space-y-3">
+                    <div class="relative">
+                        <textarea id="prompt-input" rows="3" placeholder="Describe what you want to write... (e.g. 'Write a comprehensive business report analyzing remote work productivity trends in 2026')" class="w-full p-3.5 pr-28 text-sm md:text-base bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none transition"></textarea>
+                        
+                        <div class="absolute right-3 bottom-3 flex items-center gap-2">
+                            <button onclick="clearPrompt()" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                            <button id="generate-btn" onclick="generateContent()" class="px-4 py-2 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md shadow-brand-500/20 transition flex items-center gap-2">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>Generate</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Prompt Suggestions Tags -->
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                        <span class="text-slate-400 font-medium whitespace-nowrap">Try:</span>
+                        <button onclick="setPrompt('Write a compelling executive cover letter for a Senior Project Manager role.')" class="px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-500 hover:text-white transition whitespace-nowrap">Cover Letter</button>
+                        <button onclick="setPrompt('Write a sci-fi short story about an AI discovering ancient human artifacts on Mars.')" class="px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-500 hover:text-white transition whitespace-nowrap">Sci-Fi Story</button>
+                        <button onclick="setPrompt('Create an outline and slide deck copy for a startup pitch presentation on clean energy.')" class="px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-500 hover:text-white transition whitespace-nowrap">Pitch Presentation</button>
+                        <button onclick="setPrompt('Write a detailed case study on how Acme Corp scaled customer acquisition by 200%.')" class="px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-500 hover:text-white transition whitespace-nowrap">Case Study</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editor / Output Workspace Header Tabs -->
+            <div class="px-4 md:px-6 pt-3 pb-0 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
+                <div class="flex items-center gap-2">
+                    <button id="tab-preview-btn" onclick="switchTab('preview')" class="px-4 py-2 border-b-2 border-brand-600 font-semibold text-sm text-brand-600 dark:text-brand-400 flex items-center gap-2">
+                        <i class="fa-solid fa-eye"></i> Rendered Output
+                    </button>
+                    <button id="tab-editor-btn" onclick="switchTab('editor')" class="px-4 py-2 border-b-2 border-transparent font-medium text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square"></i> Raw Editor
+                    </button>
+                </div>
+
+                <!-- Export & Action Toolbar -->
+                <div class="flex items-center gap-1 md:gap-2 pb-2">
+                    <button onclick="copyToClipboard()" title="Copy Text" class="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm transition">
+                        <i class="fa-solid fa-copy"></i>
+                    </button>
+                    <div class="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1"></div>
+                    <button onclick="exportDoc('txt')" title="Export TXT" class="px-2.5 py-1 text-xs font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition">
+                        .TXT
+                    </button>
+                    <button onclick="exportDoc('html')" title="Export HTML" class="px-2.5 py-1 text-xs font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition">
+                        .HTML
+                    </button>
+                    <button onclick="exportDoc('pdf')" title="Export PDF" class="px-2.5 py-1 text-xs font-medium bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:opacity-90 rounded-lg transition flex items-center gap-1">
+                        <i class="fa-solid fa-file-pdf text-red-400"></i> PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Output Content Area -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-100/50 dark:bg-slate-950/40 relative">
+                
+                <!-- Loading State Indicator -->
+                <div id="loading-spinner" class="hidden absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
+                    <div class="w-12 h-12 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin mb-4"></div>
+                    <p class="font-semibold text-slate-700 dark:text-slate-200 text-sm animate-pulse">Crafting your content with AI...</p>
+                    <p class="text-xs text-slate-400 mt-1">Applying formatting, style, and structure</p>
+                </div>
+
+                <!-- Document Page Wrapper -->
+                <div class="max-w-4xl mx-auto min-h-[500px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-6 md:p-12 relative">
+                    
+                    <!-- Rendered Markdown View -->
+                    <div id="view-preview" class="prose dark:prose-invert max-w-none">
+                        <div id="output-content" class="text-slate-700 dark:text-slate-300 leading-relaxed">
+                            <!-- Placeholder Welcome State -->
+                            <div class="text-center py-16 space-y-4">
+                                <div class="w-16 h-16 bg-brand-500/10 text-brand-600 dark:text-brand-400 rounded-2xl flex items-center justify-center mx-auto text-2xl">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">Ready to Write Anything</h3>
+                                <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                                    Select a document type, enter your prompt above, and click <strong>Generate</strong> to create high-quality stories, reports, emails, or essays instantly.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Raw Markdown/Text Editor View -->
+                    <div id="view-editor" class="hidden h-full">
+                        <textarea id="raw-editor-textarea" oninput="updateContentFromEditor()" class="w-full h-full min-h-[500px] font-code text-sm p-4 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none" placeholder="Your markdown or plain text output will appear here for editing..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Counters Bar -->
+            <footer class="h-10 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <div class="flex items-center gap-4">
+                    <span>Words: <strong id="word-count" class="text-slate-700 dark:text-slate-200">0</strong></span>
+                    <span>Characters: <strong id="char-count" class="text-slate-700 dark:text-slate-200">0</strong></span>
+                    <span>Reading Time: <strong id="read-time" class="text-slate-700 dark:text-slate-200">0 min</strong></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="active-doc-badge" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-semibold uppercase tracking-wider">General Document</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Global State Configuration
+        const APP_STATE = {
+            apiKey: 'AQ.Ab8RN6Lzt4J9HsSgkI-OkPlC91ow-7EVgPUxZsT0LjNj5FKwSQ',
+            selectedType: 'General',
+            selectedTone: 'Professional',
+            lengthLevel: 2, // 1: Short, 2: Medium, 3: Long, 4: Detailed
+            format: 'Markdown',
+            currentContent: '',
+            history: JSON.parse(localStorage.getItem('BRIGHTwrite_history') || '[]')
+        };
+
+        // Document Types Definition
+        const DOC_TYPES = [
+            { id: 'General', name: 'General', icon: 'fa-file-lines' },
+            { id: 'Story', name: 'Creative Story', icon: 'fa-book-open' },
+            { id: 'Essay', name: 'Essay / Article', icon: 'fa-graduation-cap' },
+            { id: 'Report', name: 'Business Report', icon: 'fa-chart-line' },
+            { id: 'CaseStudy', name: 'Case Study', icon: 'fa-briefcase' },
+            { id: 'Presentation', name: 'Presentation Deck', icon: 'fa-display' },
+            { id: 'Email', name: 'Email / Letter', icon: 'fa-envelope' },
+            { id: 'Resume', name: 'Resume / Bio', icon: 'fa-user-tie' },
+        ];
+
+        // Prebuilt Template Library Prompts
+        const TEMPLATE_LIBRARY = [
+            {
+                type: 'Report',
+                title: 'Market Research Report',
+                desc: 'Generate a comprehensive analysis of market trends, competitors, and growth opportunities.',
+                prompt: 'Write an in-depth Market Research Report analyzing the growth of Sustainable CleanTech in 2026. Include Executive Summary, Market Overview, Key Competitors, SWOT Analysis, and Future Recommendations.'
+            },
+            {
+                type: 'Story',
+                title: 'Sci-Fi Mystery Story',
+                desc: 'A captivating narrative with character development, atmospheric setting, and plot twist.',
+                prompt: 'Write an intriguing science fiction story about an investigator unraveling a mystery aboard a deep-space research station where time flows backwards.'
+            },
+            {
+                type: 'Essay',
+                title: 'Persuasive Academic Essay',
+                desc: 'Well-structured argument with clear thesis, supporting evidence, and formal conclusion.',
+                prompt: 'Write a persuasive academic essay examining the impact of artificial intelligence on modern educational institutions and critical thinking skills.'
+            },
+            {
+                type: 'CaseStudy',
+                title: 'Business Growth Case Study',
+                desc: 'Problem-Solution-Results framework highlighting strategic decisions and metrics.',
+                prompt: 'Create a detailed corporate case study focusing on how a fintech startup overhauled its security infrastructure to achieve 99.99% uptime and scale to 1 million active users.'
+            },
+            {
+                type: 'Presentation',
+                title: 'Startup Pitch Deck Copy',
+                desc: 'Slide-by-slide outline with punchy headers, bullet points, and speaker notes.',
+                prompt: 'Write a 10-slide pitch presentation deck for an AI-powered personal health and longevity advisor application. Format each slide with Title, Bullet Points, and Speaker Notes.'
+            },
+            {
+                type: 'Email',
+                title: 'Cold Outreach / Partnership Email',
+                desc: 'Professional, persuasive email sequence designed for high open and response rates.',
+                prompt: 'Draft a high-converting cold email outreach proposal to potential enterprise partners offering a SaaS workflow automation trial.'
+            }
+        ];
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            initDocTypes();
+            initTemplates();
+            renderHistoryUI();
+        });
+
+        // Initialize Document Type Selectors
+        function initDocTypes() {
+            const container = document.getElementById('doc-type-selector');
+            container.innerHTML = DOC_TYPES.map(doc => `
+                <button onclick="selectDocType('${doc.id}')" id="doctype-btn-${doc.id}" 
+                    class="doctype-btn flex items-center gap-2 p-2 rounded-xl border text-xs font-medium transition text-left ${doc.id === APP_STATE.selectedType ? 'border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-400 font-semibold' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'}">
+                    <i class="fa-solid ${doc.icon} text-slate-400"></i>
+                    <span class="truncate">${doc.name}</span>
+                </button>
+            `).join('');
+        }
+
+        // Initialize Template Cards in Modal
+        function initTemplates() {
+            const grid = document.getElementById('template-grid');
+            grid.innerHTML = TEMPLATE_LIBRARY.map(t => `
+                <div onclick="useTemplate('${t.type}', \`${t.prompt}\`)" class="p-4 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-brand-500 dark:hover:border-brand-500 hover:shadow-md cursor-pointer transition bg-slate-50/50 dark:bg-slate-800/50 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300">${t.type}</span>
+                            <i class="fa-solid fa-arrow-right text-xs text-slate-400"></i>
+                        </div>
+                        <h4 class="font-bold text-sm mb-1">${t.title}</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">${t.desc}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Handle Document Type Switch
+        function selectDocType(typeId) {
+            APP_STATE.selectedType = typeId;
+            document.querySelectorAll('.doctype-btn').forEach(btn => {
+                btn.classList.remove('border-brand-500', 'bg-brand-500/10', 'text-brand-600', 'dark:text-brand-400', 'font-semibold');
+                btn.classList.add('border-slate-200', 'dark:border-slate-700');
+            });
+            const activeBtn = document.getElementById(`doctype-btn-${typeId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('border-brand-500', 'bg-brand-500/10', 'text-brand-600', 'dark:text-brand-400', 'font-semibold');
+            }
+            document.getElementById('active-doc-badge').innerText = DOC_TYPES.find(d => d.id === typeId)?.name || 'General';
+        }
+
+        // Update Output Length Slider UI Label
+        function updateLengthLabel() {
+            const val = document.getElementById('length-slider').value;
+            APP_STATE.lengthLevel = parseInt(val);
+            const labels = ['Short (~250 words)', 'Medium (~500 words)', 'Long (~1,000 words)', 'In-Depth (~2,000+ words)'];
+            document.getElementById('length-label').innerText = labels[val - 1];
+        }
+
+        // Use Selected Template Prompt
+        function useTemplate(type, prompt) {
+            selectDocType(type);
+            setPrompt(prompt);
+            toggleModal('template-modal', false);
+            showToast('Template applied! Click Generate to create.');
+        }
+
+        // Prompt Helpers
+        function setPrompt(text) {
+            document.getElementById('prompt-input').value = text;
+        }
+
+        function clearPrompt() {
+            document.getElementById('prompt-input').value = '';
+        }
+
+        // Modal Controls
+        function toggleModal(modalId, show) {
+            const modal = document.getElementById(modalId);
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        // Toggle Dark/Light Theme
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        // Mobile Sidebar Toggle
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+        }
+
+        // Switch Workspace Tabs (Preview vs Editor)
+        function switchTab(tab) {
+            const previewView = document.getElementById('view-preview');
+            const editorView = document.getElementById('view-editor');
+            const previewBtn = document.getElementById('tab-preview-btn');
+            const editorBtn = document.getElementById('tab-editor-btn');
+
+            if (tab === 'preview') {
+                previewView.classList.remove('hidden');
+                editorView.classList.add('hidden');
+                previewBtn.className = 'px-4 py-2 border-b-2 border-brand-600 font-semibold text-sm text-brand-600 dark:text-brand-400 flex items-center gap-2';
+                editorBtn.className = 'px-4 py-2 border-b-2 border-transparent font-medium text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-2';
+            } else {
+                previewView.classList.add('hidden');
+                editorView.classList.remove('hidden');
+                editorBtn.className = 'px-4 py-2 border-b-2 border-brand-600 font-semibold text-sm text-brand-600 dark:text-brand-400 flex items-center gap-2';
+                previewBtn.className = 'px-4 py-2 border-b-2 border-transparent font-medium text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-2';
+            }
+        }
+
+        // Reset Settings
+        function resetControls() {
+            selectDocType('General');
+            document.getElementById('tone-select').value = 'Professional';
+            document.getElementById('length-slider').value = 2;
+            updateLengthLabel();
+            document.getElementById('temp-slider').value = 0.7;
+            document.getElementById('temp-val').innerText = '0.7';
+            showToast('Settings reset to default.');
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl shadow-lg text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 flex items-center gap-2 transition duration-300 pointer-events-auto transform translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info text-brand-400"></i> ${message}`;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // MAIN GENERATION CONTROLLER
+        async function generateContent() {
+            const prompt = document.getElementById('prompt-input').value.trim();
+            if (!prompt) {
+                showToast('Please enter a prompt first.');
+                return;
+            }
+
+            const loader = document.getElementById('loading-spinner');
+            loader.classList.remove('hidden');
+
+            const tone = document.getElementById('tone-select').value;
+            const lengthIndex = document.getElementById('length-slider').value;
+            const lengthWords = [250, 500, 1000, 2000][lengthIndex - 1];
+            const temp = parseFloat(document.getElementById('temp-slider').value);
+            const formatType = document.querySelector('input[name="format-type"]:checked').value;
+
+            try {
+                let generatedText = '';
+
+                if (APP_STATE.apiKey) {
+                    // Call Google Gemini API
+                    generatedText = await fetchGeminiContent(prompt, APP_STATE.selectedType, tone, lengthWords, temp, formatType);
+                } else {
+                    // Simulate mock high-quality content generation delay
+                    await new Promise(r => setTimeout(r, 1500));
+                    generatedText = generateMockContent(prompt, APP_STATE.selectedType, tone, lengthWords);
+                }
+
+                APP_STATE.currentContent = generatedText;
+                updateRenderedContent(generatedText);
+                saveToHistory(prompt, generatedText);
+
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to generate content: ' + err.message, 'error');
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+
+        // Real Google Gemini API Call Implementation
+        async function fetchGeminiContent(prompt, docType, tone, targetWords, temperature, formatType) {
+            const apiKey = APP_STATE.apiKey;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const systemInstruction = `You are a world-class professional writer and content strategist. 
+Your goal is to generate exceptional ${docType} content written in a ${tone} tone.
+Aim for approximately ${targetWords} words. 
+Format using rich ${formatType === 'Markdown' ? 'Markdown (including bold text, headers, subheaders, lists, tables, and blockquotes where appropriate)' : 'Plain Text'}.
+Ensure logical organization, smooth transitions, and high clarity.`;
+
+            const payload = {
+                contents: [
+                    {
+                        parts: [
+                            { text: prompt }
+                        ]
+                    }
+                ],
+                systemInstruction: {
+                    parts: [{ text: systemInstruction }]
+                },
+                generationConfig: {
+                    temperature: temperature,
+                    maxOutputTokens: 4096
+                }
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || 'API request failed.');
+            }
+
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) throw new Error('No content received from Gemini.');
+            return text;
+        }
+
+        // Mock Content Generator Fallback (Demo Mode)
+        function generateMockContent(prompt, docType, tone, wordCount) {
+            const title = prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
+            
+            return `# ${docType.toUpperCase()}: ${title.toUpperCase()}\n\n` +
+                `**Document Type:** ${docType} | **Tone:** ${tone} | **Generated Mode:** Demo Preview\n\n` +
+                `---\n\n` +
+                `## Executive Summary\n` +
+                `This document delivers a structured, comprehensive response addressing: *"_${prompt}_"*. Written in a **${tone}** tone, it encapsulates strategic insights, key takeaways, and actionable next steps.\n\n` +
+                `## Key Findings & Core Concepts\n` +
+                `1. **Strategic Alignment:** Ensuring that objective priorities match long-term goals.\n` +
+                `2. **Operational Efficiency:** Optimizing workflows to eliminate bottlenecks and reduce overhead.\n` +
+                `3. **Scalable Impact:** Implementing repeatable models designed for long-term growth.\n\n` +
+                `> *"Innovation distinguishes between a leader and a follower. Delivering clear, persuasive content turns vision into action."*\n\n` +
+                `## Detailed Analysis\n` +
+                `When approaching this project, it is essential to establish clear metrics. The prompt highlights critical elements that require immediate focus:\n\n` +
+                `- **Phase 1: Discovery & Scoping:** Gathering baseline data and setting core KPIs.\n` +
+                `- **Phase 2: Execution & Deployment:** Executing the primary strategy with precision.\n` +
+                `- **Phase 3: Review & Refinement:** Monitoring performance metrics for continuous improvement.\n\n` +
+                `| Metric Category | Target Goal | Status |\n` +
+                `| :--- | :--- | :--- |\n` +
+                `| Content Engagement | +45% Growth | On Track |\n` +
+                `| Productivity Rate | 2.5x Increase | Exceeding |\n` +
+                `| Quality Assurance | 99.8% Accuracy | Verified |\n\n` +
+                `## Conclusion & Next Steps\n` +
+                `In conclusion, implementing these recommendations will provide a solid foundation for success. To unlock full AI-powered generation tailored specifically to your prompt, add your free Google Gemini API key in the top navigation bar!`;
+        }
+
+        // Update Output Renderers and Counters
+        function updateRenderedContent(text) {
+            const previewEl = document.getElementById('output-content');
+            const rawEditor = document.getElementById('raw-editor-textarea');
+
+            // Set raw markdown editor value
+            rawEditor.value = text;
+
+            // Render Markdown to HTML using Marked
+            if (typeof marked !== 'undefined') {
+                previewEl.innerHTML = marked.parse(text);
+            } else {
+                previewEl.innerText = text;
+            }
+
+            // Update Counters
+            updateCounters(text);
+        }
+
+        // Live Synchronize from Raw Editor View
+        function updateContentFromEditor() {
+            const rawText = document.getElementById('raw-editor-textarea').value;
+            APP_STATE.currentContent = rawText;
+            document.getElementById('output-content').innerHTML = marked.parse(rawText);
+            updateCounters(rawText);
+        }
+
+        // Update Word, Character, and Reading Time Counters
+        function updateCounters(text) {
+            const cleanText = text.trim();
+            const words = cleanText ? cleanText.split(/\s+/).length : 0;
+            const chars = cleanText.length;
+            const readTime = Math.ceil(words / 200);
+
+            document.getElementById('word-count').innerText = words.toLocaleString();
+            document.getElementById('char-count').innerText = chars.toLocaleString();
+            document.getElementById('read-time').innerText = `${readTime} min`;
+        }
+
+        // Copy to Clipboard Functionality
+        function copyToClipboard() {
+            if (!APP_STATE.currentContent) {
+                showToast('Nothing to copy yet!');
+                return;
+            }
+            
+            // Native fallback for iframe sandbox safety
+            const textarea = document.createElement('textarea');
+            textarea.value = APP_STATE.currentContent;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            showToast('Copied to clipboard!');
+        }
+
+        // Export Document Options (.TXT, .HTML, .PDF)
+        function exportDoc(format) {
+            if (!APP_STATE.currentContent) {
+                showToast('No content to export!');
+                return;
+            }
+
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const filename = `BRIGHTWrite_${APP_STATE.selectedType}_${timestamp}`;
+
+            if (format === 'txt') {
+                const blob = new Blob([APP_STATE.currentContent], { type: 'text/plain' });
+                downloadBlob(blob, `${filename}.txt`);
+            } else if (format === 'html') {
+                const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${filename}</title>
+<style>
+    body { font-family: 'Segoe UI', sans-serif; line-height: 1.6; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; }
+    h1, h2, h3 { color: #1e3a8a; }
+    blockquote { border-left: 4px solid #3b82f6; padding-left: 15px; color: #555; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; }
+    th { background: #f1f5f9; }
+</style>
+</head>
+<body>
+${marked.parse(APP_STATE.currentContent)}
+</body>
+</html>`;
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                downloadBlob(blob, `${filename}.html`);
+            } else if (format === 'pdf') {
+                const element = document.getElementById('view-preview');
+                const opt = {
+                    margin:       0.5,
+                    filename:     `${filename}.pdf`,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2 },
+                    jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+                };
+                html2pdf().set(opt).from(element).save();
+                showToast('Generating PDF...');
+            }
+        }
+
+        function downloadBlob(blob, name) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = name;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            showToast(`Exported ${name}`);
+        }
+
+        // Save Drafts to History
+        function saveToHistory(prompt, content) {
+            const item = {
+                id: Date.now(),
+                type: APP_STATE.selectedType,
+                prompt: prompt,
+                content: content,
+                date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+
+            APP_STATE.history.unshift(item);
+            if (APP_STATE.history.length > 10) APP_STATE.history.pop();
+            
+            localStorage.setItem('BRIGHTwrite_history', JSON.stringify(APP_STATE.history));
+            renderHistoryUI();
+        }
+
+        function renderHistoryUI() {
+            const container = document.getElementById('history-list');
+            if (APP_STATE.history.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 italic">No saved drafts yet.</p>';
+                return;
+            }
+
+            container.innerHTML = APP_STATE.history.map(item => `
+                <div onclick="loadHistoryItem(${item.id})" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition flex items-center justify-between text-xs">
+                    <div class="truncate mr-2">
+                        <span class="font-bold text-slate-700 dark:text-slate-200">${item.type}:</span>
+                        <span class="text-slate-500 dark:text-slate-400">${item.prompt}</span>
+                    </div>
+                    <span class="text-[10px] text-slate-400 whitespace-nowrap">${item.date}</span>
+                </div>
+            `).join('');
+        }
+
+        function loadHistoryItem(id) {
+            const item = APP_STATE.history.find(h => h.id === id);
+            if (!item) return;
+
+            setPrompt(item.prompt);
+            selectDocType(item.type);
+            APP_STATE.currentContent = item.content;
+            updateRenderedContent(item.content);
+            showToast('Loaded draft from history.');
+        }
+
+        function clearHistory() {
+            APP_STATE.history = [];
+            localStorage.removeItem('BRIGHTwrite_history');
+            renderHistoryUI();
+            showToast('History cleared.');
+        }
+    </script>
+</body>
+</html>
+
